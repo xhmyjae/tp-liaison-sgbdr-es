@@ -2,16 +2,41 @@ version: '3.1'
 
 services:
   db:
-    image: postgres:latest
+    image: mysql:latest
+    container_name: mysql
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./data:/var/lib/mysql
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.3
+    container_name: logstash
+    volumes:
+      - ./pipeline:/usr/share/logstash/pipeline
+      - ./mysql-connector-java-8.0.23.jar:/usr/share/logstash/mysql-connector-java-8.0.23.jar
+    depends_on:
+      - elasticsearch
+      - db
+    ports:
+      - "5044:5044"
 
 volumes:
-  pgdata:
+  esdata:
+    driver: local
